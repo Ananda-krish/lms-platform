@@ -22,7 +22,6 @@ jobs:
           POSTGRES_DB: lms_db
         ports:
           - 5432:5432
-        # Health check to ensure postgres is ready
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -35,9 +34,16 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18'
+        node-version: '18.20.7'  # Specific version to match cache
         cache: 'npm'
         cache-dependency-path: 'backend/lms-backend/package-lock.json'
+    
+    - name: Generate package-lock.json if missing
+      run: |
+        cd backend/lms-backend
+        if [ ! -f "package-lock.json" ]; then
+          npm install --package-lock-only
+        fi
         
     - name: Install dependencies
       run: |
