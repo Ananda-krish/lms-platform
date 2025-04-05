@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'frontend/lms/**'  # Ensure this matches your actual folder name
+      - 'frontend/lms/**'
 
 jobs:
   build:
@@ -13,21 +13,21 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    # Explicitly use Flutter 3.13.0+ which includes Dart 3.5.3+
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.13.0'  # Or use '3.20.2' as suggested
+        flutter-version: '3.13.0'
         channel: 'stable'
+        cache: true
 
-    - name: Verify versions
+    - name: Verify Flutter and Dart versions
       run: |
         flutter --version
         dart --version
 
     - name: Install dependencies
       run: |
-        cd frontend/lms  # Confirm this is your correct path
+        cd frontend/lms
         flutter pub get
         
     - name: Analyze code
@@ -40,7 +40,12 @@ jobs:
         cd frontend/lms
         flutter test --coverage
         
-    - name: Verify paths
+    - name: Build web (for verification)
       run: |
-        echo "Current directory: $(pwd)"
-        ls -la frontend/lms/
+        cd frontend/lms
+        flutter build web --release
+        
+    - name: Build Android APK (for verification)
+      run: |
+        cd frontend/lms
+        flutter build apk --release
