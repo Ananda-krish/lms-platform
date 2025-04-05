@@ -1,0 +1,49 @@
+name: Database Migrations
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'database/**'
+      - 'backend/lms-backend/src/migrations/**'
+      
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lms_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install psql
+      run: sudo apt-get install -y postgresql-client
+      
+    - name: Wait for PostgreSQL
+      run: sleep 10
+      
+    - name: Run SQL migrations
+      run: |
+        for file in database/migrations/*.sql; do
+          psql -h localhost -U postgres -d lms_db -f "$file"
+        done
+        
+    - name: Run TypeORM migrations (if applicable)
+      run: |
+        cd backend/lms-backend
+        npm install
+        npm run migration:run
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/lms_db

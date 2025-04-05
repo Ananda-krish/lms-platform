@@ -1,0 +1,61 @@
+name: NestJS Backend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/lms-backend/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/lms-backend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lms_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        cd backend/lms-backend
+        npm ci
+        
+    - name: Lint code
+      run: |
+        cd backend/lms-backend
+        npm run lint
+        
+    - name: Run tests
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/lms_db
+        NODE_ENV: test
+      run: |
+        cd backend/lms-backend
+        npm run test:cov
+        
+    - name: Build production code
+      run: |
+        cd backend/lms-backend
+        npm run build

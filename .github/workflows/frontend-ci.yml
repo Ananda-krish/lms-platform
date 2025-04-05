@@ -1,0 +1,58 @@
+name: Flutter Frontend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'frontend/lms/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'frontend/lms/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.13.0'
+        channel: 'stable'
+        
+    - name: Install dependencies
+      run: |
+        cd frontend/lms
+        flutter pub get
+        
+    - name: Analyze code
+      run: |
+        cd frontend/lms
+        flutter analyze
+        
+    - name: Run tests
+      run: |
+        cd frontend/lms
+        flutter test --coverage
+        
+    - name: Generate code coverage report
+      if: always()
+      run: |
+        cd frontend/lms
+        flutter pub run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --packages=.packages --report-on=lib
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: frontend/lms/coverage/lcov.info
+        flags: flutter
+        
+    - name: Build web release
+      run: |
+        cd frontend/lms
+        flutter build web --release
